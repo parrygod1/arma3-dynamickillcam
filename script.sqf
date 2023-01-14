@@ -1,6 +1,7 @@
-killCamChance = 0.07;
-playerCamChance = 0.4;
-trackedUnits = [];
+killCamChance = 1;// 0.07
+playerCamChance = 0.2;
+trackedUnits = [];// used to prevent stacking event handlers
+isInCamera = false;
 
 getHeight = {
 	_unit = _this select 0;
@@ -32,6 +33,8 @@ exitCamera = {
 	setAccTime 1;
 	_camera cameraEffect ["terminate", "back"];
 	camDestroy _camera;
+	showCinemaBorder true;
+	isInCamera = false;
 };
 
 setUnitCamera = {
@@ -39,18 +42,20 @@ setUnitCamera = {
 	_camera = _this select 1;
 
 	height = [_unit] call getHeight;
-	private _headInModel = _unit selectionPosition "head";
-	private _headInMap = _unit modelToWorld _headInModel;
-	private _yDistance = random [-4, 2, 4];
-	private _zDistance = random [0, height, height];
-	private _xDistance = random [-3, 1, 3];
+	private _partInModel = _unit selectionPosition "neck";
+	private _partInMap = _unit modelToWorld _partInModel;
+	private _yDistance = random [-7, 2, 7];
+	private _zDistance = random [height, height + 1, height + 4];
+	private _xDistance = random [-5, 1, 5];
 
-	_camera camPrepareTarget _headInMap;
-	_camera camPrepareFov random [0.2, 0.4, 0.5];
+	_camera camPrepareTarget _partInMap;
+	_camera camPrepareFov random [0.1, 0.2, 0.3];
 	_camera camCommitPrepared 0;
 	_camera camPrepareRelPos [_xDistance, _yDistance, _zDistance];
 	_camera cameraEffect ["external", "back"];
+	showCinemaBorder false;
 	_camera camCommitPrepared 0;
+	isInCamera = true;
 };
 
 spawnUnitCamera = {
@@ -59,7 +64,7 @@ spawnUnitCamera = {
 	_camera = "camera" camCreate getPosATL _unit;
 	_accTime = random [0.1, 0.2, 0.3];
 	[_unit, _camera] call setUnitCamera;
-	setAccTime _accTime;
+	setAccTime 0.2;
 	[_camera] call exitCamera;
 };
 
@@ -68,7 +73,7 @@ runCameraSequence = {
 	_instigator = _this select 0;
 
 	[_instigator, _enemy] spawn {
-		sleep 0.2;
+		sleep 0.14;
 		if ([killCamChance] call willSpawn) then {
 			[_this select 1] call spawnUnitCamera;
 			if ([playerCamChance] call willSpawn) then {
@@ -86,16 +91,16 @@ runCameraSequence = {
 	_projectile addEventHandler ["HitPart", {
 		_hitEntity = _this select 1;
 
-		if (true) then {
+		if (vehicle _hitEntity isKindOf "Man" && !(_hitEntity in trackedUnits)) then {
 			trackedUnits append [_hitEntity];
 
 			_hitEntity addEventHandler ["Killed", {
 				_enemy = _this select 0;
 
-				if (!((side group _enemy) isEqualTo (side group player))) then {
+				if (!((side group _enemy) isEqualTo (side group player)) && !isInCamera) then {
 					[player, _enemy] call runCameraSequence;
 				};
 			}];
-		}
+		};
 	}];
 }];
