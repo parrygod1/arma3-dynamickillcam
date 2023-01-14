@@ -3,7 +3,7 @@ playerCamChance = 0;
 trackedUnits = [];// used to prevent stacking event handlers
 isInCamera = false;
 
-cameraPresets = [
+cameraPresetsFree = [
 	"#UP1",
 	[
 		"&Y", 7,
@@ -34,6 +34,16 @@ cameraPresets = [
 	]
 ];
 
+cameraPresetsBuilding = [
+	"#BUILDING",
+	[
+		"&Y", -1,
+		"&X", 1,
+		"&Z", 0,
+		"&FOV", 0.3
+	]
+];
+
 getHeight = {
 	private _unit = _this select 0;
 
@@ -53,6 +63,16 @@ getHeight = {
 	};
 };
 
+getIsInBuilding = {
+	lineIntersectsSurfaces [
+		getPosWorld (_this select 0),
+		getPosWorld (_this select 0) vectorAdd [0, 0, 50],
+		(_this select 0), objNull, true, 1, "GEOM", "NONE"
+	] select 0 params ["","","","_house"];
+	if (_house isKindOf "House") exitWith { true };
+	false
+};
+
 willSpawn = {
 	random 1 <= _this select 0;
 };
@@ -68,22 +88,23 @@ exitCamera = {
 	isInCamera = false;
 };
 
-
 getCameraPosValues = {
 	private _presetName = _this select 0;
-	private _unit = _this select 1;
+	private _presets = _this select 1;
+	private _unit = _this select 2;
 
 	_height = [_unit] call getHeight;
-	private _xDistance = [cameraPresets, [_presetName, "x"], 0] call BIS_fnc_dbValueReturn;
-	private _yDistance = [cameraPresets, [_presetName, "y"], 0] call BIS_fnc_dbValueReturn;
-	private _zDistance = ([cameraPresets, [_presetName, "z"], 0] call BIS_fnc_dbValueReturn) + _height;
+	private _xDistance = [_presets, [_presetName, "x"], 0] call BIS_fnc_dbValueReturn;
+	private _yDistance = [_presets, [_presetName, "y"], 0] call BIS_fnc_dbValueReturn;
+	private _zDistance = ([_presets, [_presetName, "z"], 0] call BIS_fnc_dbValueReturn) + _height;
 
 	[_xDistance, _yDistance, _zDistance];
 };
 
 getCameraFovValue = {
 	private _presetName = _this select 0;
-	private _fov = [cameraPresets, [_presetName, "fov"], 1] call BIS_fnc_dbValueReturn;
+	private _presets = _this select 1;
+	private _fov = [_presets, [_presetName, "fov"], 1] call BIS_fnc_dbValueReturn;
 
 	_fov;
 };
@@ -91,24 +112,29 @@ getCameraFovValue = {
 updateCameraValues = {
 	private _camera = _this select 0;
 	private _unit = _this select 1;
+	private _presetArray = cameraPresetsFree;
 
-	private _presetName = selectRandom ([cameraPresets, []] call BIS_fnc_dbClassList);
+	if([_unit] call getIsInBuilding) then {
+		_presetArray = cameraPresetsBuilding;
+	};
 
-	_camera camPrepareFov ([_presetName] call getCameraFovValue);
+	private _presetName = selectRandom ([_presetArray, []] call BIS_fnc_dbClassList);
+
+	_camera camPrepareFov ([_presetName, _presetArray] call getCameraFovValue);
 	_camera camCommitPrepared 0;
-	_camera camPrepareRelPos ([_presetName, _unit] call getCameraPosValues);
+	_camera camPrepareRelPos ([_presetName, _presetArray, _unit] call getCameraPosValues);
 };
 
 setUnitCamera = {
 	private _unit = _this select 0;
 	private _camera = _this select 1;
-	
+
 	height = [_unit] call getHeight;
 	private _partInModel = _unit selectionPosition "body";
 	private _partInMap = _unit modelToWorld _partInModel;
 
 	_camera camPrepareTarget _partInMap;
-	[_camera, _unit] call updateCameraValues; 
+	[_camera, _unit] call updateCameraValues;
 	_camera cameraEffect ["external", "back"];
 	showCinemaBorder false;
 	_camera camCommitPrepared 0;
