@@ -1,5 +1,5 @@
 killCamChance = 1;
-playerCamChance = 0;
+playerCamChance = 0.4;
 trackedUnits = [];// used to prevent stacking event handlers
 isInCamera = false;
 
@@ -64,13 +64,29 @@ getHeight = {
 };
 
 getIsInBuilding = {
-	lineIntersectsSurfaces [
+	private _house = (lineIntersectsSurfaces [
 		getPosWorld (_this select 0),
 		getPosWorld (_this select 0) vectorAdd [0, 0, 50],
 		(_this select 0), objNull, true, 1, "GEOM", "NONE"
-	] select 0 params ["","","","_house"];
-	if (_house isKindOf "House") exitWith { true };
-	false
+	]) select 0;
+	if (!(isNil "_house")) then { 
+		_house = _house select 2;
+
+		if ((typeName _house == "OBJECT") || (typeName _house == "STRING")) then {
+			if (_house isKindOf "House") exitWith { true };
+		};
+	};
+	false;
+};
+
+getIsVisible = {
+	private _camera = _this select 0;
+	private _unit = _this select 1;
+	
+	_intersection = (lineIntersectsSurfaces [getPosASL _camera, getPosASL _unit, _camera, objNull, true, 1]) select 0;
+	
+	if (isNil "_intersection") exitWith { true };
+	false;
 };
 
 willSpawn = {
@@ -123,6 +139,7 @@ updateCameraValues = {
 	_camera camPrepareFov ([_presetName, _presetArray] call getCameraFovValue);
 	_camera camCommitPrepared 0;
 	_camera camPrepareRelPos ([_presetName, _presetArray, _unit] call getCameraPosValues);
+	_camera camCommitPrepared 0;
 };
 
 setUnitCamera = {
@@ -136,18 +153,35 @@ setUnitCamera = {
 	_camera camPrepareTarget _partInMap;
 	[_camera, _unit] call updateCameraValues;
 	_camera cameraEffect ["external", "back"];
-	showCinemaBorder false;
-	_camera camCommitPrepared 0;
-	isInCamera = true;
+	
+	if([_camera, _unit] call getIsVisible) then {
+		showCinemaBorder false;
+		isInCamera = true;
+	} else {
+		_camera cameraEffect ["terminate", "back"];
+		isInCamera = false;
+		camDestroy _camera;
+	};
 };
 
 spawnUnitCamera = {
 	private _unit = _this select 0;
 	private _camera = "camera" camCreate getPosATL _unit;
-
-	[_unit, _camera] call setUnitCamera;
-	setAccTime 0.2;
-	[_camera] call exitCamera;
+	
+	try {
+		[_unit, _camera] call setUnitCamera;
+		
+		if(isInCamera) then {
+			setAccTime 0.2;
+			[_camera] call exitCamera;
+		} else {
+			camDestroy _camera;
+		};
+	} catch {
+		_camera cameraEffect ["terminate", "back"];
+		isInCamera = false;
+		camDestroy _camera;
+	};
 };
 
 runCameraSequence = {
