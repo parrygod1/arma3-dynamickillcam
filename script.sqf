@@ -3,6 +3,12 @@ playerCamChance = 0;
 trackedUnits = [];// used to prevent stacking event handlers
 isInCamera = false;
 
+enablePP = true;
+PPeffect_colorC = ppEffectCreate ["ColorCorrections",1500];
+PPeffect_colorC ppEffectAdjust [1.0171,1.11041,0.0404295,[0,0,0,0.00543666],[0.80244,1.10571,0.919084,0.959542],[0.69944,-0.161832,0.462392,0]];
+PPeffect_grain = ppEffectCreate ["FilmGrain",1550];
+PPeffect_grain ppEffectAdjust [0.0668329,0.5,0,0.2,0.1];
+
 getPreset = {
 	_type = _this select 0;
 
@@ -10,40 +16,40 @@ getPreset = {
 		[
 			"#UP1",
 			[
-				"&Y", 7,
+				"&Y", -7,
 				"&X", 5,
 				"&Z", 4,
 				"&FOV", 0.1
 			],
 			"#UP2",
 			[
-				"&Y", 6,
-				"&X", -5,
+				"&Y", -6,
+				"&X", 5,
 				"&Z", 5,
 				"&FOV", 0.1
 			],
 			"#DOWN1",
 			[
 				"&Y", 7,
-				"&X", 5,
-				"&Z", 0.5,
+				"&X", -5,
+				"&Z", 0.2,
 				"&FOV", 0.1
 			],
 			"#DOWN2",
 			[
 				"&Y", -6,
 				"&X", 6,
-				"&Z", 0.5,
+				"&Z", 0.2,
 				"&FOV", 0.1
 			],
 			"#LEVEL1",
 			[
 				"&Y", 7,
-				"&X", 5,
+				"&X", -5,
 				"&Z", 1,
 				"&FOV", 0.1
 			],
-			"#LEVEL1",
+			"#LEVEL2",
 			[
 				"&Y", -6,
 				"&X", 6,
@@ -135,6 +141,9 @@ exitCamera = {
 	camDestroy _camera;
 	showCinemaBorder true;
 	isInCamera = false;
+
+	PPeffect_colorC ppEffectEnable false;
+	PPeffect_grain ppEffectEnable false;
 };
 
 getCameraPosValues = {
@@ -176,7 +185,7 @@ updateCameraValues = {
 
 	height = [_unit] call getHeight;
 	private _partInModel = _unit selectionPosition _part;
-	private _partInMap =  _unit modelToWorld _partInModel;// (ASLToAGL eyePos _unit) vectorAdd (eyeDirection _unit vectorMultiply 0.5); 
+	private _partInMap =  _unit modelToWorld _partInModel;
 	private _target = _partInMap vectorAdd (eyeDirection _unit vectorMultiply 0.2);
 
 	_camera camPrepareTarget _target;
@@ -185,6 +194,13 @@ updateCameraValues = {
 	_camera camPrepareRelPos ([_presetName, _presetArray, _unit] call getCameraPosValues);
 	_camera camCommitPrepared 0;
 	_camera cameraEffect ["external", "back"];
+
+	if(enablePP) then {
+		PPeffect_colorC ppEffectEnable true;
+		PPeffect_grain ppEffectEnable true;
+		PPeffect_colorC ppEffectCommit 0;
+		PPeffect_grain ppEffectCommit 0;
+	};
 };
 
 setUnitCamera = {
@@ -247,8 +263,8 @@ runCameraSequence = {
 };
 
 (vehicle player) addEventHandler ["Fired", {
-	private _weapon = _this select 1;
-	private _type = getNumber (configfile >> "CfgWeapons" >> _weapon >> "type");// 0-thrown, 1-rifle 2-pistol 3-? 4-launcher
+	//private _weapon = _this select 1;
+	//private _type = getNumber (configfile >> "CfgWeapons" >> _weapon >> "type");// 0-thrown, 1-rifle 2-pistol 3-? 4-launcher
 	private _projectile = _this select 6;
 
 	_projectile addEventHandler ["HitPart", {
@@ -263,7 +279,14 @@ runCameraSequence = {
 				if (!((side group _enemy) isEqualTo (side group player)) && !isInCamera) then {
 					[player, _enemy] call runCameraSequence;
 				};
+
+				trackedUnits = trackedUnits - [_enemy];
+			}];
+
+			_hitEntity addEventHandler ["Deleted", {
+				trackedUnits = trackedUnits - [_this select 0];
 			}];
 		};
 	}];
 }];
+
