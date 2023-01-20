@@ -9,6 +9,9 @@ PPeffect_colorC ppEffectAdjust [1.0171,1.11041,0.0404295,[0,0,0,0.00543666],[0.8
 PPeffect_grain = ppEffectCreate ["FilmGrain",1550];
 PPeffect_grain ppEffectAdjust [0.0668329,0.5,0,0.2,0.1];
 
+enableSound = true;
+soundNames = ["slow1.ogg", "slow2.ogg", "slow3.ogg"];
+
 getPreset = {
 	_type = _this select 0;
 
@@ -195,11 +198,23 @@ updateCameraValues = {
 	_camera camCommitPrepared 0;
 	_camera cameraEffect ["external", "back"];
 
+	
+};
+
+playEffects = {
+	private _camera = _this select 0;
+
 	if(enablePP) then {
 		PPeffect_colorC ppEffectEnable true;
 		PPeffect_grain ppEffectEnable true;
 		PPeffect_colorC ppEffectCommit 0;
 		PPeffect_grain ppEffectCommit 0;
+	};
+
+	if(enableSound) then {
+		private _sound = selectRandom soundNames;
+		
+	playSound3D [getMissionPath _sound, _camera, false, getPosASL _camera, 2];
 	};
 };
 
@@ -212,12 +227,14 @@ setUnitCamera = {
 	if ([_camera, _unit] call getIsVisible) then {
 		showCinemaBorder false;
 		isInCamera = true;
+		[_camera] call playEffects;
 	} else {
 		// try again
 		[_camera, _unit] call updateCameraValues;
 		if ([_camera, _unit] call getIsVisible) then {
 			showCinemaBorder false;
 			isInCamera = true;
+			[_camera] call playEffects;
 		} else {
 			_camera cameraEffect ["terminate", "back"];
 			isInCamera = false;
