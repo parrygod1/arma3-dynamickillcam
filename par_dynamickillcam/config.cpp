@@ -22,21 +22,27 @@ class CfgMods
 	};
 };
 
-class CfgFunctions {
-    class par_dynamickillcam {
-        class main {
-            file = "par_dynamickillcam";
-			class killcam {};
-        };
-    };
-};
-
 class Extended_PreInit_EventHandlers
 {
 	class par_dynamickillcam
 	{
 		init = "call compile preProcessFileLineNumbers '\par_dynamickillcam\XEH_preInit.sqf'";
 	};
+};
+
+class Extended_PostInit_Eventhandlers {
+    class par_dynamickillcam 
+	{
+		init = "call par_dynamickillcam_fnc_killcam";
+    };
+};
+
+class CfgFunctions {
+    class par_dynamickillcam {
+		class main {
+			class killcam {file = "par_dynamickillcam\functions\fn_killcam.sqf";};
+		};
+    };
 };
 
 class CfgSounds

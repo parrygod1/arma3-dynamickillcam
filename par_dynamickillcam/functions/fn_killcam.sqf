@@ -1,15 +1,12 @@
-killCamChance = par_dynamickillcam_killCamChance;
 playerCamChance = 0;
 trackedUnits = [];// used to prevent stacking event handlers
 isInCamera = false;
 
-enablePP = par_dynamickillcam_enablePP;
 PPeffect_colorC = ppEffectCreate ["ColorCorrections",1500];
 PPeffect_colorC ppEffectAdjust [1.0171,1.11041,0.0404295,[0,0,0,0.00543666],[0.80244,1.10571,0.919084,0.959542],[0.69944,-0.161832,0.462392,0]];
 PPeffect_grain = ppEffectCreate ["FilmGrain",1550];
 PPeffect_grain ppEffectAdjust [0.0668329,0.5,0,0.2,0.1];
 
-enableSound = par_dynamickillcam_enableSound;
 soundNames = ["par_dynamickillcam_slow1", "par_dynamickillcam_slow2", "par_dynamickillcam_slow3"];
 
 getPreset = {
@@ -144,6 +141,7 @@ exitCamera = {
 	camDestroy _camera;
 	showCinemaBorder true;
 	isInCamera = false;
+	player allowDamage true;
 
 	PPeffect_colorC ppEffectEnable false;
 	PPeffect_grain ppEffectEnable false;
@@ -197,27 +195,34 @@ updateCameraValues = {
 	_camera camPrepareRelPos ([_presetName, _presetArray, _unit] call getCameraPosValues);
 	_camera camCommitPrepared 0;
 	_camera cameraEffect ["external", "back"];
-
-	
+	if(par_dynamickillcam_enableNVG && sunOrMoon < 1) then { camUseNVG true; };
 };
 
 playEffects = {
 	private _camera = _this select 0;
 
-	if(enablePP) then {
+	if(par_dynamickillcam_enablePP) then {
 		PPeffect_colorC ppEffectEnable true;
 		PPeffect_grain ppEffectEnable true;
 		PPeffect_colorC ppEffectCommit 0;
 		PPeffect_grain ppEffectCommit 0;
 	};
 
-	if(enableSound) then {
+	if(par_dynamickillcam_enableSound) then {
 		private _sound = selectRandom soundNames;
-		
-	playSound3D [getMissionPath _sound, _camera, false, getPosASL _camera, 2];
+		playSound [_sound, false];
 	};
 };
 
+handleLetterBox = {
+	if(par_dynamickillcam_enableLetterBox) then {
+		showCinemaBorder true;
+	} else {
+		showCinemaBorder false;
+	};
+};
+
+//Refactor this function
 setUnitCamera = {
 	private _unit = _this select 0;
 	private _camera = _this select 1;
@@ -225,14 +230,14 @@ setUnitCamera = {
 	[_camera, _unit] call updateCameraValues;
 
 	if ([_camera, _unit] call getIsVisible) then {
-		showCinemaBorder false;
+		call handleLetterBox;
 		isInCamera = true;
 		[_camera] call playEffects;
 	} else {
 		// try again
 		[_camera, _unit] call updateCameraValues;
 		if ([_camera, _unit] call getIsVisible) then {
-			showCinemaBorder false;
+			call handleLetterBox;
 			isInCamera = true;
 			[_camera] call playEffects;
 		} else {
@@ -251,6 +256,7 @@ spawnUnitCamera = {
 		[_unit, _camera] call setUnitCamera;
 
 		if (isInCamera) then {
+			player allowDamage false;
 			setAccTime 0.2;
 			[_camera] call exitCamera;
 		} else {
@@ -270,8 +276,9 @@ runCameraSequence = {
 	[_instigator, _enemy] spawn {
 		sleep 0.14;
 
-		if ([killCamChance] call willSpawn) then {
+		if ([par_dynamickillcam_killCamChance] call willSpawn) then {
 			[_this select 1] call spawnUnitCamera;
+
 			if ([playerCamChance] call willSpawn) then {
 				[_this select 0] call spawnUnitCamera;
 			};
