@@ -1,13 +1,13 @@
 playerCamChance = 0;
-trackedUnits = [];// used to prevent stacking event handlers
-isInCamera = false;
+par_dynamickillcam_trackedUnits = [];// used to prevent stacking event handlers
+par_dynamickillcam_isInCamera = false;
 
-PPeffect_colorC = ppEffectCreate ["ColorCorrections",1500];
-PPeffect_colorC ppEffectAdjust [1.0171,1.11041,0.0404295,[0,0,0,0.00543666],[0.80244,1.10571,0.919084,0.959542],[0.69944,-0.161832,0.462392,0]];
-PPeffect_grain = ppEffectCreate ["FilmGrain",1550];
-PPeffect_grain ppEffectAdjust [0.0668329,0.5,0,0.2,0.1];
+PPeffect_colorC = ppEffectCreate ["ColorCorrections", 1500];
+PPeffect_colorC ppEffectAdjust [1.0171, 1.11041, 0.0404295, [0, 0, 0, 0.00543666], [0.80244, 1.10571, 0.919084, 0.959542], [0.69944, -0.161832, 0.462392, 0]];
+PPeffect_grain = ppEffectCreate ["FilmGrain", 1550];
+PPeffect_grain ppEffectAdjust [0.0668329, 0.5, 0, 0.2, 0.1];
 
-soundNames = ["par_dynamickillcam_slow1", "par_dynamickillcam_slow2", "par_dynamickillcam_slow3"];
+par_dynamickillcam_soundNames = ["par_dynamickillcam_slow1", "par_dynamickillcam_slow2", "par_dynamickillcam_slow3"];
 
 getPreset = {
 	_type = _this select 0;
@@ -140,7 +140,7 @@ exitCamera = {
 	_camera cameraEffect ["terminate", "back"];
 	camDestroy _camera;
 	showCinemaBorder true;
-	isInCamera = false;
+	par_dynamickillcam_isInCamera = false;
 	player allowDamage true;
 
 	PPeffect_colorC ppEffectEnable false;
@@ -182,11 +182,10 @@ updateCameraValues = {
 	};
 
 	private _presetName = selectRandom ([_presetArray, []] call BIS_fnc_dbClassList);
-	hint str _presetName;
 
 	height = [_unit] call getHeight;
 	private _partInModel = _unit selectionPosition _part;
-	private _partInMap =  _unit modelToWorld _partInModel;
+	private _partInMap = _unit modelToWorld _partInModel;
 	private _target = _partInMap vectorAdd (eyeDirection _unit vectorMultiply 0.2);
 
 	_camera camPrepareTarget _target;
@@ -195,34 +194,37 @@ updateCameraValues = {
 	_camera camPrepareRelPos ([_presetName, _presetArray, _unit] call getCameraPosValues);
 	_camera camCommitPrepared 0;
 	_camera cameraEffect ["external", "back"];
-	if(par_dynamickillcam_enableNVG && sunOrMoon < 1) then { camUseNVG true; };
+	if (par_dynamickillcam_enableNVG && sunOrMoon < 1) then {
+		camUseNVG true;
+	};
 };
 
 playEffects = {
 	private _camera = _this select 0;
 
-	if(par_dynamickillcam_enablePP) then {
-		PPeffect_colorC ppEffectEnable true;
-		PPeffect_grain ppEffectEnable true;
-		PPeffect_colorC ppEffectCommit 0;
-		PPeffect_grain ppEffectCommit 0;
-	};
+	// if (par_dynamickillcam_enablePP) then {
+		// PPeffect_colorC ppEffectEnable true;
+		// PPeffect_grain ppEffectEnable true;
+		// PPeffect_colorC ppEffectCommit 0;
+		// PPeffect_grain ppEffectCommit 0;
+		//
+	//};
 
-	if(par_dynamickillcam_enableSound) then {
-		private _sound = selectRandom soundNames;
-		playSound [_sound, false];
+	if (par_dynamickillcam_enableSound) then {
+		private _sound = selectRandom par_dynamickillcam_soundNames;
+		playSound [_sound, false, 0.2];
 	};
 };
 
 handleLetterBox = {
-	if(par_dynamickillcam_enableLetterBox) then {
+	if (par_dynamickillcam_enableLetterBox) then {
 		showCinemaBorder true;
 	} else {
 		showCinemaBorder false;
 	};
 };
 
-//Refactor this function
+// Refactor this function
 setUnitCamera = {
 	private _unit = _this select 0;
 	private _camera = _this select 1;
@@ -231,18 +233,18 @@ setUnitCamera = {
 
 	if ([_camera, _unit] call getIsVisible) then {
 		call handleLetterBox;
-		isInCamera = true;
+		par_dynamickillcam_isInCamera = true;
 		[_camera] call playEffects;
 	} else {
 		// try again
 		[_camera, _unit] call updateCameraValues;
 		if ([_camera, _unit] call getIsVisible) then {
 			call handleLetterBox;
-			isInCamera = true;
+			par_dynamickillcam_isInCamera = true;
 			[_camera] call playEffects;
 		} else {
 			_camera cameraEffect ["terminate", "back"];
-			isInCamera = false;
+			par_dynamickillcam_isInCamera = false;
 			camDestroy _camera;
 		}
 	};
@@ -255,7 +257,7 @@ spawnUnitCamera = {
 	try {
 		[_unit, _camera] call setUnitCamera;
 
-		if (isInCamera) then {
+		if (par_dynamickillcam_isInCamera) then {
 			player allowDamage false;
 			setAccTime 0.2;
 			[_camera] call exitCamera;
@@ -263,8 +265,9 @@ spawnUnitCamera = {
 			camDestroy _camera;
 		};
 	} catch {
+		diag_log _exception;
 		_camera cameraEffect ["terminate", "back"];
-		isInCamera = false;
+		par_dynamickillcam_isInCamera = false;
 		camDestroy _camera;
 	};
 };
@@ -286,30 +289,32 @@ runCameraSequence = {
 	};
 };
 
-(vehicle player) addEventHandler ["Fired", {
-	//private _weapon = _this select 1;
-	//private _type = getNumber (configfile >> "CfgWeapons" >> _weapon >> "type");// 0-thrown, 1-rifle 2-pistol 3-? 4-launcher
-	private _projectile = _this select 6;
+if (isDedicated == false) then {
+	(vehicle player) addEventHandler ["Fired", {
+		// private _weapon = _this select 1;
+		// private _type = getNumber (configfile >> "CfgWeapons" >> _weapon >> "type");// 0-thrown, 1-rifle 2-pistol 3-? 4-launcher
+		private _projectile = _this select 6;
 
-	_projectile addEventHandler ["HitPart", {
-		private _hitEntity = _this select 1;
+		_projectile addEventHandler ["HitPart", {
+			private _hitEntity = _this select 1;
 
-		if (vehicle _hitEntity isKindOf "Man" && !(_hitEntity in trackedUnits)) then {
-			trackedUnits append [_hitEntity];
+			if (vehicle _hitEntity isKindOf "Man" && !(_hitEntity in par_dynamickillcam_trackedUnits)) then {
+				par_dynamickillcam_trackedUnits append [_hitEntity];
 
-			_hitEntity addEventHandler ["Killed", {
-				private _enemy = _this select 0;
+				_hitEntity addEventHandler ["Killed", {
+					private _enemy = _this select 0;
 
-				if (!((side group _enemy) isEqualTo (side group player)) && !isInCamera) then {
-					[player, _enemy] call runCameraSequence;
-				};
+					if (!((side group _enemy) isEqualTo (side group player)) && !par_dynamickillcam_isInCamera) then {
+						[player, _enemy] call runCameraSequence;
+					};
 
-				trackedUnits = trackedUnits - [_enemy];
-			}];
+					par_dynamickillcam_trackedUnits = par_dynamickillcam_trackedUnits - [_enemy];
+				}];
 
-			_hitEntity addEventHandler ["Deleted", {
-				trackedUnits = trackedUnits - [_this select 0];
-			}];
-		};
+				_hitEntity addEventHandler ["Deleted", {
+					par_dynamickillcam_trackedUnits = par_dynamickillcam_trackedUnits - [_this select 0];
+				}];
+			};
+		}];
 	}];
-}];
+};

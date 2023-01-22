@@ -30,17 +30,14 @@ class Extended_PreInit_EventHandlers
 	};
 };
 
-class Extended_PostInit_Eventhandlers {
-    class par_dynamickillcam 
-	{
-		init = "call par_dynamickillcam_fnc_killcam";
-    };
-};
-
 class CfgFunctions {
     class par_dynamickillcam {
 		class main {
-			class killcam {file = "par_dynamickillcam\functions\fn_killcam.sqf";};
+			class killcam {
+				file = "par_dynamickillcam\functions\fn_killcam.sqf";
+				postInit = 1;
+				recompile = 1;
+			};
 		};
     };
 };
@@ -51,17 +48,17 @@ class CfgSounds
 	
 	class par_dynamickillcam_slow1 {
 		name = "par_dynamickillcam_slow1";
-		sound[] = {"\par_dynamickillcam\sound\slow1.ogg", 100,1};
+		sound[] = {"\par_dynamickillcam\sound\slow1.ogg", 2,1};
 		titles[] = {};
 	};
 	class par_dynamickillcam_slow2 {
 		name = "par_dynamickillcam_slow2";
-		sound[] = {"\par_dynamickillcam\sound\slow2.ogg", 100,1};
+		sound[] = {"\par_dynamickillcam\sound\slow2.ogg", 1.5,1};
 		titles[] = {};
 	};
 	class par_dynamickillcam_slow3 {
 		name = "par_dynamickillcam_slow3";
-		sound[] = {"\par_dynamickillcam\sound\slow3.ogg", 100,1};
+		sound[] = {"\par_dynamickillcam\sound\slow3.ogg", 2,1};
 		titles[] = {};
 	};
 };
