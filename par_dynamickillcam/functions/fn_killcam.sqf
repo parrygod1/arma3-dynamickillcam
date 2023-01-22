@@ -23,8 +23,8 @@ getPreset = {
 			],
 			"#UP2",
 			[
-				"&Y", -6,
-				"&X", 5,
+				"&Y", 6,
+				"&X", -5,
 				"&Z", 5,
 				"&FOV", 0.1
 			],
@@ -212,7 +212,7 @@ playEffects = {
 
 	if (par_dynamickillcam_enableSound) then {
 		private _sound = selectRandom par_dynamickillcam_soundNames;
-		playSound [_sound, false, 0.2];
+		playSound [_sound, false, 0.1];
 	};
 };
 
@@ -262,7 +262,9 @@ spawnUnitCamera = {
 			setAccTime 0.2;
 			[_camera] call exitCamera;
 		} else {
-			camDestroy _camera;
+			if(!(isNil "_camera")) then {
+				camDestroy _camera;
+			};
 		};
 	} catch {
 		diag_log _exception;
@@ -289,7 +291,7 @@ runCameraSequence = {
 	};
 };
 
-if (isDedicated == false) then {
+if (isMultiplayer == false) then {
 	(vehicle player) addEventHandler ["Fired", {
 		// private _weapon = _this select 1;
 		// private _type = getNumber (configfile >> "CfgWeapons" >> _weapon >> "type");// 0-thrown, 1-rifle 2-pistol 3-? 4-launcher
@@ -303,9 +305,12 @@ if (isDedicated == false) then {
 
 				_hitEntity addEventHandler ["Killed", {
 					private _enemy = _this select 0;
+					private _instigator = _this select 2;
 
-					if (!((side group _enemy) isEqualTo (side group player)) && !par_dynamickillcam_isInCamera) then {
-						[player, _enemy] call runCameraSequence;
+					if(_instigator == player) then {
+						if (!((side group _enemy) isEqualTo (side group player)) && !par_dynamickillcam_isInCamera) then {
+							[player, _enemy] call runCameraSequence;
+						};
 					};
 
 					par_dynamickillcam_trackedUnits = par_dynamickillcam_trackedUnits - [_enemy];

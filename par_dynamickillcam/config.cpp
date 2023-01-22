@@ -36,7 +36,6 @@ class CfgFunctions {
 			class killcam {
 				file = "par_dynamickillcam\functions\fn_killcam.sqf";
 				postInit = 1;
-				recompile = 1;
 			};
 		};
     };
