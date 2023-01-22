@@ -1,4 +1,4 @@
-["par_dynamickillcam_killCamChance", "SLIDER", ["Camera Spawn Chance", "The chance for the camera to trigger on kill. Use 1 for every time and 0 for never."], ["Dynamic Kill Cam", "General"], [0, 1, 1, 2, false]] call CBA_fnc_addSetting;
+["par_dynamickillcam_killCamChance", "SLIDER", ["Camera Spawn Chance", "The chance for the camera to trigger on kill. Use 1 for every time and 0 for never."], ["Dynamic Kill Cam", "General"], [0, 1, 0.5, 2, false]] call CBA_fnc_addSetting;
 //["par_dynamickillcam_duration", "SLIDER", ["Duration", "How long should the camera stay before resetting back to player's camera."], ["Dynamic Kill Cam", "General"], [0, 10, 3, 2, false]] call CBA_fnc_addSetting;
 //["par_dynamickillcam_timeAcceleration", "SLIDER", ["Time acceleration", "How slow should the game run when camera is triggered. 1 is normal speed."], ["Dynamic Kill Cam", "General"], [0.1, 0.2, 1, 2, false]] call CBA_fnc_addSetting;
 //["par_dynamickillcam_enablePP", "CHECKBOX", ["Enable Post Process", "Enables or disables post process filter on camera"], ["Dynamic Kill Cam", "General"], [true]] call CBA_fnc_addSetting;
